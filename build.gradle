@@ -1,0 +1,43 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'com.github.johnrengelman.shadow' version '1.2.3'
+  id 'eclipse'
+}
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+  jcenter()
+}
+
+sourceCompatibility = '1.7'
+
+shadowJar.name='mssqlbatchimporter'
+shadowJar.version='0.9.0'
+
+dependencies {
+  compile 'com.microsoft.sqlserver:sqljdbc:4.0.2206.100'
+  compile 'log4j:log4j:1.2.17'
+}
+
+mainClassName = 'com.mdac.tools.sql.MSSQLBatchImporter'
+
+shadowJar{
+    mergeServiceFiles('META-INF/spring.*')
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+    exclude "META-INF/LICENSE"
+    archiveName = "${shadowJar.name}-${shadowJar.version}.jar"
+}
+
+jar {
+	manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.8'
+}
