@@ -10,6 +10,12 @@ import org.apache.log4j.Logger;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 
+/**
+ * 
+ * 
+ * @author roman@mdac-consulting.com
+ *
+ */
 public class DatabaseConnector{
 	
 	private Connection connection;
@@ -53,12 +59,11 @@ public class DatabaseConnector{
 			statement = this.connection.createStatement();
 			
 		} catch (final Exception ex) {
-			System.out.println("Error when connecting to database");
-			ex.printStackTrace();
+			logger.error("Error when connecting to database", ex);
 			return false;
 		}
 		
-		System.out.println("Successfully connected to database");
+		logger.info("Successfully connected to database");
 		return true;
 	}
 	
@@ -68,18 +73,18 @@ public class DatabaseConnector{
 			try {
 				this.statement.close();
 			} catch (final SQLException sqlex) {
-				sqlex.printStackTrace();
+				logger.error("Error when closing statement", sqlex);
 			}
 		}
 		if (this.connection != null) {
 			try {
 				this.connection.close();
 			} catch (final SQLException sqlex) {
-				sqlex.printStackTrace();
+				logger.error("Error when closing connection", sqlex);
 			}
 		}
 		
-		System.out.println("Disconnected from Database");
+		logger.info("Disconnected from Database");
 		return true;
 	}
 	
@@ -91,8 +96,6 @@ public class DatabaseConnector{
 		
 		try {
 			
-			//System.out.println("Flusing batch with [" + this.batchCounter + "] entries" );
-			
 			this.statement.executeBatch();
 			this.statement.clearBatch();
 			this.batchCounter = 0;
@@ -100,13 +103,13 @@ public class DatabaseConnector{
 		catch(final BatchUpdateException ssex){
 				
 			if(!ignoreInsertException(ssex.getMessage())){
-				logger.error("Error", ssex);;
+				logger.error("Error when flushing batch", ssex);;
 			}else{
-				logger.error(ssex.getMessage());
+				//
 			}
 				
 		} catch (SQLException e) {
-			logger.error("Error", e);
+			logger.error("Error when flushing batch", e);
 		}
 		
 		
@@ -126,8 +129,6 @@ public class DatabaseConnector{
 				this.batchCounter++;
 				
 				if(batchCounter > batchSize){
-					
-					//System.out.println("Flushing batch with [" + this.batchCounter + "] entries" );
 					
 					this.statement.executeBatch();
 					this.statement.clearBatch();

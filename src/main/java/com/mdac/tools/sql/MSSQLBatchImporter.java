@@ -6,33 +6,30 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import org.apache.log4j.FileAppender;
+import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
 import org.apache.log4j.SimpleLayout;
 
 /**
  * 
  * Example Usage:
  * 
- * 
- * 
  * -test 
- * -d "D://workspaces//osudio//carlsbergIntakeUAT//database//secondtry//secondtry//test"
- * -f "D://workspaces//osudio//carlsbergIntakeUAT//database//secondtry//secondtry//sqlimport//dbo.b2bcustomerunit.Table.sql" 
+ * -d "D://workspaces//test"
+ * -f "D://workspaces//dbo.products.Table.sql" 
  * -h localhost 
- * -s hybrisuatassortment 
- * -u cbhybrisuat
- * -p cbhybrisuat
+ * -s schema 
+ * -u user
+ * -p password
  * 
  * 
- * @author Roman Pierson
+ * @author roman@mdac-consulting.com
  *
  */
 public class MSSQLBatchImporter {
 
 	
-	private final Logger logger = Logger.getLogger("ddd");
+	private final Logger logger = Logger.getLogger("default");
 	
 	private boolean isTest = true;
 	
@@ -53,11 +50,9 @@ public class MSSQLBatchImporter {
 	private static final String OPTION_DB_NAME = "s";
 	private static final String OPTION_DB_USER = "u";
 	private static final String OPTION_DB_PASSWORD = "p";
-	private static final String OPTION_DB_BATCHSIZE = "batchsize";
+	private static final String OPTION_HELP = "help";
 	
 	public static void main(String[] args) throws IOException {
-
-		
 		
 		final MSSQLBatchImporter importer = MSSQLBatchImporter.createInstance(args);
 		
@@ -67,14 +62,35 @@ public class MSSQLBatchImporter {
 		
 	}
 	
+	
+	
 	// Avoid instantiation
 	private MSSQLBatchImporter(){
 		
 	}
 	
+	
+	private static void initializeLogger(final Logger logger){
+		
+		final SimpleLayout layout = new SimpleLayout(); 
+		
+		// Create the console logger for standard output
+		final ConsoleAppender consoleAppender = new ConsoleAppender(layout);
+		
+		logger.addAppender(consoleAppender);
+		
+	}
+
 	public static MSSQLBatchImporter createInstance(final String[] options){
 	
 		final MSSQLBatchImporter importer = new MSSQLBatchImporter();
+		
+		initializeLogger(importer.logger);
+		
+		if(importer.isOptionSet(OPTION_HELP, options)){
+			importer.displayHelp();
+			return null;
+		}
 		
 		importer.isTest = importer.isOptionSet(OPTION_TEST, options);
 		
@@ -82,7 +98,7 @@ public class MSSQLBatchImporter {
 		final String filePath = importer.getOptionValue(OPTION_FILE, options);
 		
 		if(directoryPath == null && filePath == null){
-			System.out.println("You must specify either a file or directory!");
+			importer.logger.error("You must specify either a file or directory!");
 			importer.displayHelp();
 			return null;
 		}
@@ -92,7 +108,7 @@ public class MSSQLBatchImporter {
 			final File directory = importer.getValidDirectory(directoryPath);
 			
 			if(directory == null){
-				System.out.println("Directory [" + directoryPath + "] is invalid or has any files");
+				importer.logger.error("Directory [" + directoryPath + "] is invalid or has any files");
 				importer.displayHelp();
 				return null;
 			}
@@ -104,7 +120,7 @@ public class MSSQLBatchImporter {
 			final File file = importer.getValidFile(filePath);
 			
 			if(file == null){
-				System.out.println("File [" + filePath + "] is invalid");
+				importer.logger.error("File [" + filePath + "] is invalid");
 				importer.displayHelp();
 				return null;
 			}
@@ -120,7 +136,7 @@ public class MSSQLBatchImporter {
 		final String password = importer.getOptionValue(OPTION_DB_PASSWORD, options);
 		
 		if(host == null || port == null || schema == null || user == null || password == null){
-			System.out.println("Invalid database options - please check");
+			importer.logger.error("Invalid database options - please check");
 			importer.displayHelp();
 			return null;
 		}
@@ -128,30 +144,16 @@ public class MSSQLBatchImporter {
 		// Test the connection
 		importer.databaseConnector = new DatabaseConnector(host, port, schema, user, password, 4000, importer.logger);
 		
-		System.out.println("Testing the connection to database....");
+		importer.logger.info("Testing the connection to database....");
 		final boolean success = importer.databaseConnector.connect();
 		
 		if(!success){
-			System.out.println("Error when testing database connection");
+			importer.logger.error("Error when testing database connection");
 			importer.displayHelp();
 			return null;
 		}
 		
 		importer.databaseConnector.disconnect();
-		
-		 try {
-		FileAppender fh;  
-
-	     SimpleLayout layout = new SimpleLayout(); 
-	      
-			fh = new FileAppender(layout, "D:/Import230.log");
-			fh.setThreshold(Priority.ERROR);
-	        importer.logger.addAppender(fh);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}  
-	        
 		
 		return importer;
 	}
@@ -220,6 +222,8 @@ public class MSSQLBatchImporter {
 		final StringBuilder sb = new StringBuilder();
 		
 		sb.append("Available options:").append(lineSeparator);
+		sb.append(tab).append('-').append(OPTION_HELP).append(tab).append("Display this help").append(lineSeparator);
+		
 		sb.append(tab).append('-').append(OPTION_TEST).append(tab).append("If passed options will be validated but no import is performed").append(lineSeparator);
 		
 		sb.append(tab).append('-').append(OPTION_FILE).append(tab).append("File to be imported").append(lineSeparator);
@@ -231,13 +235,13 @@ public class MSSQLBatchImporter {
 		sb.append(tab).append('-').append(OPTION_DB_USER).append(tab).append("Database User").append(lineSeparator);
 		sb.append(tab).append('-').append(OPTION_DB_PASSWORD).append(tab).append("Database Password").append(lineSeparator);
 		
-		System.out.println(sb.toString());
+		logger.info(sb.toString());
 		
 	}
 
 	public void performImport(){
 		
-		System.out.println("Starting import....");
+		logger.info("Starting import....");
 		
 		long startTS = System.currentTimeMillis();
 		
@@ -258,13 +262,13 @@ public class MSSQLBatchImporter {
 		
 		this.databaseConnector.disconnect();
 		
-		System.out.println("Import finished and took [" + (System.currentTimeMillis() - startTS) + "] ms");
+		logger.info("Import finished and took [" + (System.currentTimeMillis() - startTS) + "] ms");
 		
 	}
 	
 	private void importFile(final File file){
 		
-		System.out.println("Importing file [" + file.getName() + "]");
+		logger.info("Importing file [" + file.getName() + "]");
 		long startTS = System.currentTimeMillis();
 		
 		BufferedReader in = null;
@@ -272,8 +276,7 @@ public class MSSQLBatchImporter {
 		try {
 			in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF16"));
 		} catch (final Exception ex) {
-			System.out.println("Error when trying to read file [" + file.getName() + "]");
-			ex.printStackTrace();
+			logger.error("Error when trying to start to read file [" + file.getName() + "]", ex);
 			return;
 		}
 		
@@ -333,16 +336,16 @@ public class MSSQLBatchImporter {
 			}
 			
 		} catch (final IOException ioex) {
-			ioex.printStackTrace();
+			logger.error("Error when trying to read file [" + file.getName() + "]", ioex);
 		}
 
 		try {
 			in.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException ex) {
+			logger.error("Error when trying to close file [" + file.getName() + "]", ex);
 		}
 
-		System.out.println("Finished to import file [" + file.getName() + "] with [" + rawLines + "/" + logicalLines +  "] lines took [" + (System.currentTimeMillis() - startTS) + "] ms");
+		logger.info("Finished to import file [" + file.getName() + "] with [" + rawLines + "/" + logicalLines +  "] lines took [" + (System.currentTimeMillis() - startTS) + "] ms");
 		
 	}
 	
