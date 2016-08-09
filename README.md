@@ -12,7 +12,7 @@ As the Microsoft driver library is not available in a public repo you need to ad
 
 To run the fat jar:
 
-    java -jar target/mssqlbatchimporter-1.0.0.jar
+    java -jar target/mssqlbatchimporter-0.9.0.jar
 
 The build.gradle uses the Gradle shadowJar plugin to assemble the application and all it's dependencies into a single "fat" jar.
 
@@ -22,4 +22,4 @@ The build.gradle uses the Gradle shadowJar plugin to assemble the application an
 
 To run the fat jar:
 
-    java -jar build/libs/Importer-all.jar
+    java -jar build/libs/mssqlbatchimporter-0.9.0.jar
