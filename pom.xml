@@ -22,7 +22,7 @@
 
   <groupId>com.mdac.tools.sql</groupId>
   <artifactId>mssqlbatchimporter</artifactId>
-  <version>0.9.0</version>
+  <version>0.9.1</version>
 
   <name>MSSQLBatchImporter</name>
 
@@ -34,11 +34,6 @@
       <version>4.0.2206.100</version>
     </dependency>
 
-    <dependency>
-    	<groupId>log4j</groupId>
-    	<artifactId>log4j</artifactId>
-    	<version>1.2.17</version>
-	</dependency>
 
   </dependencies>
 
@@ -46,13 +41,13 @@
 
     <pluginManagement>
       <plugins>
-        <!-- We specify the Maven compiler plugin as we need to set it to Java 1.8 -->
+        <!-- We specify the Maven compiler plugin as we need to set it to Java 1.7 -->
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.1</version>
           <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>1.7</source>
+            <target>1.7</target>
           </configuration>
         </plugin>
       </plugins>

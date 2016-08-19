@@ -5,10 +5,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 
@@ -28,9 +26,6 @@ import org.apache.log4j.SimpleLayout;
  */
 public class MSSQLBatchImporter {
 
-	
-	private final Logger logger = Logger.getLogger("default");
-	
 	private boolean isTest = true;
 	
 	private File importFile;
@@ -69,23 +64,10 @@ public class MSSQLBatchImporter {
 		
 	}
 	
-	
-	private static void initializeLogger(final Logger logger){
-		
-		final SimpleLayout layout = new SimpleLayout(); 
-		
-		// Create the console logger for standard output
-		final ConsoleAppender consoleAppender = new ConsoleAppender(layout);
-		
-		logger.addAppender(consoleAppender);
-		
-	}
 
 	public static MSSQLBatchImporter createInstance(final String[] options){
 	
 		final MSSQLBatchImporter importer = new MSSQLBatchImporter();
-		
-		initializeLogger(importer.logger);
 		
 		if(importer.isOptionSet(OPTION_HELP, options)){
 			importer.displayHelp();
@@ -98,7 +80,7 @@ public class MSSQLBatchImporter {
 		final String filePath = importer.getOptionValue(OPTION_FILE, options);
 		
 		if(directoryPath == null && filePath == null){
-			importer.logger.error("You must specify either a file or directory!");
+			System.out.println("You must specify either a file or directory!");
 			importer.displayHelp();
 			return null;
 		}
@@ -108,7 +90,7 @@ public class MSSQLBatchImporter {
 			final File directory = importer.getValidDirectory(directoryPath);
 			
 			if(directory == null){
-				importer.logger.error("Directory [" + directoryPath + "] is invalid or has any files");
+				System.out.println("Directory [" + directoryPath + "] is invalid or has any files");
 				importer.displayHelp();
 				return null;
 			}
@@ -120,7 +102,7 @@ public class MSSQLBatchImporter {
 			final File file = importer.getValidFile(filePath);
 			
 			if(file == null){
-				importer.logger.error("File [" + filePath + "] is invalid");
+				System.out.println("File [" + filePath + "] is invalid");
 				importer.displayHelp();
 				return null;
 			}
@@ -136,19 +118,19 @@ public class MSSQLBatchImporter {
 		final String password = importer.getOptionValue(OPTION_DB_PASSWORD, options);
 		
 		if(host == null || port == null || schema == null || user == null || password == null){
-			importer.logger.error("Invalid database options - please check");
+			System.out.println("Invalid database options - please check");
 			importer.displayHelp();
 			return null;
 		}
 		
 		// Test the connection
-		importer.databaseConnector = new DatabaseConnector(host, port, schema, user, password, 4000, importer.logger);
+		importer.databaseConnector = new DatabaseConnector(host, port, schema, user, password, 4000);
 		
-		importer.logger.info("Testing the connection to database....");
+		System.out.println("Testing the connection to database....");
 		final boolean success = importer.databaseConnector.connect();
 		
 		if(!success){
-			importer.logger.error("Error when testing database connection");
+			System.out.println("Error when testing database connection");
 			importer.displayHelp();
 			return null;
 		}
@@ -235,13 +217,13 @@ public class MSSQLBatchImporter {
 		sb.append(tab).append('-').append(OPTION_DB_USER).append(tab).append("Database User").append(lineSeparator);
 		sb.append(tab).append('-').append(OPTION_DB_PASSWORD).append(tab).append("Database Password").append(lineSeparator);
 		
-		logger.info(sb.toString());
+		System.out.println(sb.toString());
 		
 	}
 
 	public void performImport(){
 		
-		logger.info("Starting import....");
+		System.out.println("Starting import....");
 		
 		long startTS = System.currentTimeMillis();
 		
@@ -262,21 +244,71 @@ public class MSSQLBatchImporter {
 		
 		this.databaseConnector.disconnect();
 		
-		logger.info("Import finished and took [" + (System.currentTimeMillis() - startTS) + "] ms");
+		System.out.println("Import finished and took [" + (System.currentTimeMillis() - startTS) + "] ms");
+		
+	}
+	
+	/**
+	 * 
+	 * Returns the count of effective lines in a file
+	 * 
+	 * @param file	The file
+	 * @return		The number of lines
+	 */
+	private long getLinesPerFile(final File file){
+	
+		BufferedReader in = null;
+
+		try {
+			in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF16"));
+		} catch (final Exception ex) {
+			System.out.println("Error when trying to start to read file [" + file.getName() + "]");
+			return 0;
+		}
+		
+		long rawLines = 0;
+		String line = null;
+		
+		try {
+			while ((line = in.readLine()) != null) {
+	
+				rawLines++;
+			}
+		} catch (final IOException ioex) {
+			System.out.println("Error when trying to read file [" + file.getName() + "]");
+		}
+		
+		try {
+			in.close();
+		} catch (IOException ex) {
+			System.out.println("Error when trying to close file [" + file.getName() + "]");
+		}
+		
+		return rawLines;
 		
 	}
 	
 	private void importFile(final File file){
 		
-		logger.info("Importing file [" + file.getName() + "]");
 		long startTS = System.currentTimeMillis();
+		
+		final long lineCount = getLinesPerFile(file);
+		final boolean showProgress = lineCount > 1000;
+		
+		final Map<Long, Integer> percentages = showProgress ? getPercentageTresholds(lineCount) : null;
+		
+		if(percentages == null){
+			System.out.println("Importing file [" + file.getName() + "]");
+		} else {
+			System.out.print("Importing file [" + file.getName() + "] - 0%\r");
+		}
 		
 		BufferedReader in = null;
 
 		try {
 			in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF16"));
 		} catch (final Exception ex) {
-			logger.error("Error when trying to start to read file [" + file.getName() + "]", ex);
+			System.out.println("Error when trying to start to read file [" + file.getName() + "]");
 			return;
 		}
 		
@@ -292,6 +324,10 @@ public class MSSQLBatchImporter {
 			while ((line = in.readLine()) != null) {
 
 				rawLines++;
+				
+				if(percentages != null && percentages.containsKey(new Long(rawLines))){
+					System.out.print("Importing file [" + file.getName() + "] - " + percentages.get(new Long(rawLines)) + "%\r");
+				}
 				
 				if(representsNewLine(line)){
 					
@@ -336,17 +372,35 @@ public class MSSQLBatchImporter {
 			}
 			
 		} catch (final IOException ioex) {
-			logger.error("Error when trying to read file [" + file.getName() + "]", ioex);
+			System.out.println("Error when trying to read file [" + file.getName() + "]");
 		}
 
 		try {
 			in.close();
 		} catch (IOException ex) {
-			logger.error("Error when trying to close file [" + file.getName() + "]", ex);
+			System.out.println("Error when trying to close file [" + file.getName() + "]");
 		}
 
-		logger.info("Finished to import file [" + file.getName() + "] with [" + rawLines + "/" + logicalLines +  "] lines took [" + (System.currentTimeMillis() - startTS) + "] ms");
+		System.out.println("Finished to import file [" + file.getName() + "] with [" + rawLines + "/" + logicalLines +  "] lines took [" + (System.currentTimeMillis() - startTS) + "] ms");
 		
+	}
+	
+	private Map<Long, Integer> getPercentageTresholds(final long totalLines){
+		
+		if(totalLines < 10){
+			return null;
+		}
+		
+		final Map<Long, Integer> percentages = new HashMap<Long, Integer>();
+		
+		for(int percentage = 10; percentage < 100; percentage += 10){
+			
+			long resultingLine = totalLines * percentage / 100;
+			
+			percentages.put(new Long(resultingLine), new Integer(percentage));
+		}
+		
+		return percentages;
 	}
 	
 	protected boolean ignoreLine(final String line) {

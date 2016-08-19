@@ -14,11 +14,10 @@ repositories {
 sourceCompatibility = '1.7'
 
 shadowJar.name='mssqlbatchimporter'
-shadowJar.version='0.9.0'
+shadowJar.version='0.9.1'
 
 dependencies {
   compile 'com.microsoft.sqlserver:sqljdbc:4.0.2206.100'
-  compile 'log4j:log4j:1.2.17'
 }
 
 mainClassName = 'com.mdac.tools.sql.MSSQLBatchImporter'
