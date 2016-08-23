@@ -19,6 +19,7 @@ import java.util.Map;
  * -s schema 
  * -u user
  * -p password
+ * -m mode (np='no port')
  * 
  * 
  * @author roman@mdac-consulting.com
@@ -46,6 +47,9 @@ public class MSSQLBatchImporter {
 	private static final String OPTION_DB_USER = "u";
 	private static final String OPTION_DB_PASSWORD = "p";
 	private static final String OPTION_HELP = "help";
+	private static final String OPTION_MODE = "m";
+	
+	public static final String OPTION_MODE_NO_PORT = "np";
 	
 	public static void main(String[] args) throws IOException {
 		
@@ -116,6 +120,7 @@ public class MSSQLBatchImporter {
 		final String schema = importer.getOptionValue(OPTION_DB_NAME, options);
 		final String user = importer.getOptionValue(OPTION_DB_USER, options);
 		final String password = importer.getOptionValue(OPTION_DB_PASSWORD, options);
+		final String mode = importer.getOptionValue(OPTION_MODE, options);
 		
 		if(host == null || port == null || schema == null || user == null || password == null){
 			System.out.println("Invalid database options - please check");
@@ -124,7 +129,7 @@ public class MSSQLBatchImporter {
 		}
 		
 		// Test the connection
-		importer.databaseConnector = new DatabaseConnector(host, port, schema, user, password, 4000);
+		importer.databaseConnector = new DatabaseConnector(host, port, schema, user, password, 4000, mode);
 		
 		System.out.println("Testing the connection to database....");
 		final boolean success = importer.databaseConnector.connect();
@@ -216,6 +221,7 @@ public class MSSQLBatchImporter {
 		sb.append(tab).append('-').append(OPTION_DB_NAME).append(tab).append("Database Name").append(lineSeparator);
 		sb.append(tab).append('-').append(OPTION_DB_USER).append(tab).append("Database User").append(lineSeparator);
 		sb.append(tab).append('-').append(OPTION_DB_PASSWORD).append(tab).append("Database Password").append(lineSeparator);
+		sb.append(tab).append('-').append(OPTION_MODE).append(tab).append("Mode - Example: np ('no port')").append(lineSeparator);
 		
 		System.out.println(sb.toString());
 		

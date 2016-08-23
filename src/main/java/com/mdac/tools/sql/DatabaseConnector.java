@@ -24,11 +24,12 @@ public class DatabaseConnector{
 	private final String schema;
 	private final String user;
 	private final String password;
+	private final String mode;
 	
 	private final int batchSize;
 	private int batchCounter = 0;
 	
-	public DatabaseConnector(final String host, final String port, final String schema, final String user, String password, final int batchSize){
+	public DatabaseConnector(final String host, final String port, final String schema, final String user, String password, final int batchSize, String mode){
 		
 		this.host = host;
 		this.port = port;
@@ -36,6 +37,7 @@ public class DatabaseConnector{
 		this.user = user;
 		this.password = password;
 		this.batchSize = batchSize;
+		this.mode = mode;
 		
 	}
 	
@@ -49,7 +51,14 @@ public class DatabaseConnector{
 	
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String url = "jdbc:sqlserver://" + this.host + ":" + this.port + ";databaseName=" + this.schema;
+			String url = null;
+			if(this.mode!=null && this.mode.equals(MSSQLBatchImporter.OPTION_MODE_NO_PORT)) {
+				url = "jdbc:sqlserver://" + this.host + ";databaseName=" + this.schema;
+			}
+			else {
+				url = "jdbc:sqlserver://" + this.host + ":" + this.port + ";databaseName=" + this.schema;
+			}
+			
 			connection = DriverManager.getConnection(url, this.user, this.password);
 			
 			statement = this.connection.createStatement();
