@@ -22,7 +22,7 @@
 
   <groupId>com.mdac.tools.sql</groupId>
   <artifactId>mssqlbatchimporter</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.2</version>
 
   <name>MSSQLBatchImporter</name>
 
